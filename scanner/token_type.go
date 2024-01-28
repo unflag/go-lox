@@ -5,7 +5,7 @@ import "fmt"
 type TokenType int
 
 const (
-	LEFT_PAREN = iota
+	LEFT_PAREN TokenType = iota
 	RIGHT_PAREN
 	LEFT_BRACE
 	RIGHT_BRACE
@@ -51,22 +51,22 @@ const (
 )
 
 var reservedWords = map[string]TokenType{
-	"and":      AND,
-	"class":    CLASS,
-	"else":     ELSE,
-	"false":    FALSE,
-	"for":      FOR,
-	"fun":      FUN,
-	"if":       IF,
-	"nil":      NIL,
-	"or":       OR,
-	"пичатать": PRINT,
-	"return":   RETURN,
-	"super":    SUPER,
-	"this":     THIS,
-	"true":     TRUE,
-	"var":      VAR,
-	"while":    WHILE,
+	"and":    AND,
+	"class":  CLASS,
+	"else":   ELSE,
+	"false":  FALSE,
+	"for":    FOR,
+	"fun":    FUN,
+	"if":     IF,
+	"nil":    NIL,
+	"or":     OR,
+	"print":  PRINT,
+	"return": RETURN,
+	"super":  SUPER,
+	"this":   THIS,
+	"true":   TRUE,
+	"var":    VAR,
+	"while":  WHILE,
 }
 
 type Token struct {
@@ -87,4 +87,8 @@ func NewToken(typ TokenType, lexeme string, literal interface{}, line int) Token
 
 func (t Token) String() string {
 	return fmt.Sprintf("%d %s %v", t.typ, t.lexeme, t.literal)
+}
+
+func (t Token) Lexeme() string {
+	return t.lexeme
 }

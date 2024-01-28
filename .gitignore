@@ -7,6 +7,7 @@
 *.dll
 *.so
 *.dylib
+lox
 
 # Test binary, built with `go test -c`
 *.test
@@ -21,3 +22,6 @@
 go.work
 
 .idea
+
+# Generated code
+ast_type_gen.go
