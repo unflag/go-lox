@@ -36,7 +36,7 @@ func main() {
 		ASTType: map[string]map[string]any{
 			"Binary": map[string]any{
 				"Left":     "Expr",
-				"Operator": "scanner.Token",
+				"Operator": "*scanner.Token",
 				"Right":    "Expr",
 			},
 			"Grouping": map[string]any{
@@ -46,7 +46,7 @@ func main() {
 				"Value": "any",
 			},
 			"Unary": map[string]any{
-				"Operator": "scanner.Token",
+				"Operator": "*scanner.Token",
 				"Right":    "Expr",
 			},
 		},

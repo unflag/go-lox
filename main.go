@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/unflag/go-lox/parser"
 	"github.com/unflag/go-lox/scanner"
 )
 
@@ -66,9 +67,10 @@ func run(src string) error {
 			return fmt.Errorf("could not parse input: %w", err)
 		}
 
-		for _, t := range tokens {
-			fmt.Printf("%s\n", t)
-		}
+		p := parser.New(tokens)
+		expr := p.Parse()
+
+		fmt.Println(parser.NewPrinter().Print(expr))
 	}
 
 	return nil

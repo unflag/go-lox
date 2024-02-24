@@ -8,7 +8,7 @@ import (
 
 type Scanner struct {
 	source []rune
-	tokens []Token
+	tokens []*Token
 
 	start, current, line int
 }
@@ -19,7 +19,7 @@ func NewScanner(source string) *Scanner {
 	}
 }
 
-func (s *Scanner) Scan() ([]Token, error) {
+func (s *Scanner) Scan() ([]*Token, error) {
 	for !s.isEOF() {
 		s.start = s.current
 		if err := s.scanToken(); err != nil {
@@ -27,12 +27,7 @@ func (s *Scanner) Scan() ([]Token, error) {
 		}
 	}
 
-	s.tokens = append(s.tokens, Token{
-		typ:     EOF,
-		lexeme:  "",
-		literal: nil,
-		line:    s.line,
-	})
+	s.tokens = append(s.tokens, NewToken(EOF, "", nil, s.line))
 
 	return s.tokens, nil
 }
@@ -65,25 +60,25 @@ func (s *Scanner) scanToken() error {
 	case char == '*':
 		s.tokens = append(s.tokens, NewToken(STAR, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '!':
-		var typ TokenType = BANG
+		var typ = BANG
 		if s.nextMatch('=') {
 			typ = BANG_EQUAL
 		}
 		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '=':
-		var typ TokenType = EQUAL
+		var typ = EQUAL
 		if s.nextMatch('=') {
 			typ = EQUAL_EQUAL
 		}
 		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '<':
-		var typ TokenType = LESS
+		var typ = LESS
 		if s.nextMatch('=') {
 			typ = LESS_EQUAL
 		}
 		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '>':
-		var typ TokenType = GREATER
+		var typ = GREATER
 		if s.nextMatch('=') {
 			typ = GREATER_EQUAL
 		}

@@ -7,6 +7,10 @@ import (
 
 type Printer[T string] struct{}
 
+func NewPrinter() *Printer[string] {
+	return &Printer[string]{}
+}
+
 func (p *Printer[T]) Print(e Expr) T {
 	return accept[T](e, p)
 }

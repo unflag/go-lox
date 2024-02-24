@@ -35,8 +35,7 @@ func Test_Printer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := Printer[string]{}
-			out := p.Print(tc.input)
+			out := NewPrinter().Print(tc.input)
 			if assert.Equal(t, tc.want, out) {
 				t.Logf("%s: '%s'", tc.name, out)
 			}
