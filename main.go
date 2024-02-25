@@ -66,8 +66,10 @@ func run(src string) error {
 
 		p := newParser(tokens)
 		expr := p.Parse()
+		fmt.Println("Parser: ", newPrinter().Print(expr))
 
-		fmt.Println(newPrinter().Print(expr))
+		result := newInterpreter().Evaluate(expr)
+		fmt.Println("Interpreter: ", result)
 	}
 
 	return nil

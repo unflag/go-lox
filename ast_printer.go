@@ -15,19 +15,20 @@ func (p *Printer[T]) Print(e Expr) T {
 	return Accept[T](e, p)
 }
 
-func (p *Printer[T]) Visit(e Expr) T {
-	switch e := e.(type) {
-	case *Binary:
-		return p.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
-	case *Grouping:
-		return p.parenthesize("group", e.Expression)
-	case *Literal:
-		return T(fmt.Sprintf("%v", e.Value))
-	case *Unary:
-		return p.parenthesize(e.Operator.Lexeme, e.Right)
-	default:
-		return ""
-	}
+func (p *Printer[T]) VisitBinary(e *Binary) T {
+	return p.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
+}
+
+func (p *Printer[T]) VisitGrouping(e *Grouping) T {
+	return p.parenthesize("group", e.Expression)
+}
+
+func (p *Printer[T]) VisitLiteral(e *Literal) T {
+	return T(fmt.Sprintf("%v", e.Value))
+}
+
+func (p *Printer[T]) VisitUnary(e *Unary) T {
+	return p.parenthesize(e.Operator.Lexeme, e.Right)
 }
 
 func (p *Printer[T]) parenthesize(name string, exprs ...Expr) T {

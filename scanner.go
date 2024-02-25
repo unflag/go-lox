@@ -148,7 +148,9 @@ func (s *Scanner) readString() {
 	// the closing "
 	s.next()
 
-	s.tokens = append(s.tokens, newToken(STRING, string(s.source[s.start+1:s.current-1]), nil, s.line))
+	t := newToken(STRING, string(s.source[s.start:s.current]), string(s.source[s.start+1:s.current-1]), s.line)
+
+	s.tokens = append(s.tokens, t)
 }
 
 func (s *Scanner) readNumber() {

@@ -73,11 +73,21 @@ package main
 type Expr interface {}
 
 type Visitor[T any] interface {
-	Visit(e Expr) T
+    {{ range $typeName, $_ := .ASTType -}}
+	Visit{{ $typeName }}(e *{{ $typeName }}) T
+    {{ end -}}
 }
 
 func Accept[T any](e Expr, v Visitor[T]) T {
-	return v.Visit(e)
+    switch e := e.(type) {
+    {{ range $typeName, $_ := .ASTType -}}
+    case *{{ $typeName }}:
+	    return v.Visit{{ $typeName }}(e)
+    {{ end -}}
+    default:
+    }
+
+    return any(nil).(T)
 }
 
 {{ range $typeName, $typeDefinition := .ASTType -}}
