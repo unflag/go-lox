@@ -1,4 +1,4 @@
-package scanner
+package main
 
 import "fmt"
 
@@ -155,37 +155,21 @@ var reservedWords = map[string]TokenType{
 }
 
 type Token struct {
-	typ     TokenType
-	lexeme  string
-	literal interface{}
-	line    int
+	Type    TokenType
+	Lexeme  string
+	Literal interface{}
+	Line    int
 }
 
-func NewToken(typ TokenType, lexeme string, literal interface{}, line int) *Token {
+func newToken(typ TokenType, lexeme string, literal interface{}, line int) *Token {
 	return &Token{
-		typ:     typ,
-		lexeme:  lexeme,
-		literal: literal,
-		line:    line,
+		Type:    typ,
+		Lexeme:  lexeme,
+		Literal: literal,
+		Line:    line,
 	}
 }
 
 func (t *Token) String() string {
-	return fmt.Sprintf("%d %s %v", t.typ, t.lexeme, t.literal)
-}
-
-func (t *Token) Type() TokenType {
-	return t.typ
-}
-
-func (t *Token) Lexeme() string {
-	return t.lexeme
-}
-
-func (t *Token) Literal() interface{} {
-	return t.literal
-}
-
-func (t *Token) Line() int {
-	return t.line
+	return fmt.Sprintf("%d %s %v", t.Type, t.Lexeme, t.Literal)
 }

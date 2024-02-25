@@ -1,10 +1,9 @@
-package parser
+package main
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/unflag/go-lox/scanner"
 )
 
 func Test_Printer(t *testing.T) {
@@ -17,12 +16,12 @@ func Test_Printer(t *testing.T) {
 			name: "basic",
 			input: &Binary{
 				Left: &Unary{
-					Operator: scanner.NewToken(scanner.MINUS, "-", nil, 1),
+					Operator: newToken(MINUS, "-", nil, 1),
 					Right: &Literal{
 						Value: 123,
 					},
 				},
-				Operator: scanner.NewToken(scanner.STAR, "*", nil, 1),
+				Operator: newToken(STAR, "*", nil, 1),
 				Right: &Grouping{
 					Expression: &Literal{
 						Value: 45.67,
@@ -35,7 +34,7 @@ func Test_Printer(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			out := NewPrinter().Print(tc.input)
+			out := newPrinter().Print(tc.input)
 			if assert.Equal(t, tc.want, out) {
 				t.Logf("%s: '%s'", tc.name, out)
 			}

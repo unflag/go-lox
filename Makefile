@@ -11,4 +11,4 @@ build: generate
 	$(GO_CMD) build -o $(ARTIFACT_NAME)
 
 run: generate
-	$(GO_CMD) run main.go
+	$(GO_CMD) run .

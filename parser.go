@@ -1,17 +1,16 @@
-package parser
+package main
 
 import (
 	"log"
-
-	"github.com/unflag/go-lox/scanner"
+	"text/scanner"
 )
 
 type Parser struct {
-	tokens  []*scanner.Token
+	tokens  []*Token
 	current int
 }
 
-func New(tokens []*scanner.Token) *Parser {
+func newParser(tokens []*Token) *Parser {
 	return &Parser{
 		tokens:  tokens,
 		current: 0,
@@ -38,7 +37,7 @@ func (p *Parser) equality() (Expr, error) {
 		return nil, err
 	}
 
-	for p.match(scanner.BANG_EQUAL, scanner.EQUAL_EQUAL) {
+	for p.match(BANG_EQUAL, EQUAL_EQUAL) {
 		operator := p.previous()
 		right, err := p.comparison()
 		if err != nil {
@@ -55,7 +54,7 @@ func (p *Parser) equality() (Expr, error) {
 	return expr, nil
 }
 
-func (p *Parser) match(tokenTypes ...scanner.TokenType) bool {
+func (p *Parser) match(tokenTypes ...TokenType) bool {
 	for _, tokenType := range tokenTypes {
 		if p.check(tokenType) {
 			p.advance()
@@ -66,15 +65,15 @@ func (p *Parser) match(tokenTypes ...scanner.TokenType) bool {
 	return false
 }
 
-func (p *Parser) check(tokenType scanner.TokenType) bool {
+func (p *Parser) check(tokenType TokenType) bool {
 	if p.isEOF() {
 		return false
 	}
 
-	return p.peek().Type() == tokenType
+	return p.peek().Type == tokenType
 }
 
-func (p *Parser) advance() *scanner.Token {
+func (p *Parser) advance() *Token {
 	if !p.isEOF() {
 		p.current++
 	}
@@ -83,14 +82,14 @@ func (p *Parser) advance() *scanner.Token {
 }
 
 func (p *Parser) isEOF() bool {
-	return p.peek().Type() == scanner.EOF
+	return p.peek().Type == scanner.EOF
 }
 
-func (p *Parser) peek() *scanner.Token {
+func (p *Parser) peek() *Token {
 	return p.tokens[p.current]
 }
 
-func (p *Parser) previous() *scanner.Token {
+func (p *Parser) previous() *Token {
 	return p.tokens[p.current-1]
 }
 
@@ -100,7 +99,7 @@ func (p *Parser) comparison() (Expr, error) {
 		return nil, err
 	}
 
-	for p.match(scanner.GREATER, scanner.GREATER_EQUAL, scanner.LESS, scanner.LESS_EQUAL) {
+	for p.match(GREATER, GREATER_EQUAL, LESS, LESS_EQUAL) {
 		operator := p.previous()
 		right, err := p.term()
 		if err != nil {
@@ -122,7 +121,7 @@ func (p *Parser) term() (Expr, error) {
 		return nil, err
 	}
 
-	for p.match(scanner.MINUS, scanner.PLUS) {
+	for p.match(MINUS, PLUS) {
 		operator := p.previous()
 		right, err := p.factor()
 		if err != nil {
@@ -144,7 +143,7 @@ func (p *Parser) factor() (Expr, error) {
 		return nil, err
 	}
 
-	for p.match(scanner.SLASH, scanner.STAR) {
+	for p.match(SLASH, STAR) {
 		operator := p.previous()
 		right, err := p.unary()
 		if err != nil {
@@ -161,7 +160,7 @@ func (p *Parser) factor() (Expr, error) {
 }
 
 func (p *Parser) unary() (Expr, error) {
-	if p.match(scanner.BANG, scanner.MINUS) {
+	if p.match(BANG, MINUS) {
 		operator := p.previous()
 		right, err := p.unary()
 		if err != nil {
@@ -178,29 +177,29 @@ func (p *Parser) unary() (Expr, error) {
 }
 
 func (p *Parser) primary() (Expr, error) {
-	if p.match(scanner.FALSE) {
+	if p.match(FALSE) {
 		return &Literal{Value: false}, nil
 	}
 
-	if p.match(scanner.TRUE) {
+	if p.match(TRUE) {
 		return &Literal{Value: true}, nil
 	}
 
-	if p.match(scanner.NIL) {
+	if p.match(NIL) {
 		return &Literal{Value: nil}, nil
 	}
 
-	if p.match(scanner.NUMBER, scanner.STRING) {
-		return &Literal{Value: p.previous().Literal()}, nil
+	if p.match(NUMBER, STRING) {
+		return &Literal{Value: p.previous().Literal}, nil
 	}
 
-	if p.match(scanner.LEFT_PAREN) {
+	if p.match(LEFT_PAREN) {
 		expr, err := p.expression()
 		if err != nil {
 			return nil, err
 		}
 
-		if _, err := p.consume(scanner.RIGHT_PAREN, "expect ')' after expression."); err != nil {
+		if _, err := p.consume(RIGHT_PAREN, "expect ')' after expression."); err != nil {
 			return nil, err
 		}
 
@@ -210,7 +209,7 @@ func (p *Parser) primary() (Expr, error) {
 	return nil, ParseError{Token: p.peek(), Message: "expect expression."}
 }
 
-func (p *Parser) consume(t scanner.TokenType, message string) (*scanner.Token, error) {
+func (p *Parser) consume(t TokenType, message string) (*Token, error) {
 	if p.check(t) {
 		return p.advance(), nil
 	}
@@ -221,12 +220,12 @@ func (p *Parser) consume(t scanner.TokenType, message string) (*scanner.Token, e
 func (p *Parser) synchronize() {
 	p.advance()
 	for !p.isEOF() {
-		if p.previous().Type() == scanner.SEMICOLON {
+		if p.previous().Type == SEMICOLON {
 			return
 		}
 
-		switch p.peek().Type() {
-		case scanner.CLASS, scanner.FUN, scanner.VAR, scanner.FOR, scanner.IF, scanner.WHILE, scanner.PRINT, scanner.RETURN:
+		switch p.peek().Type {
+		case CLASS, FUN, VAR, FOR, IF, WHILE, PRINT, RETURN:
 			return
 		default:
 			p.advance()

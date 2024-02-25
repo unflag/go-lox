@@ -1,4 +1,4 @@
-package scanner
+package main
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ type Scanner struct {
 	start, current, line int
 }
 
-func NewScanner(source string) *Scanner {
+func newScanner(source string) *Scanner {
 	return &Scanner{
 		source: []rune(source),
 	}
@@ -27,7 +27,7 @@ func (s *Scanner) Scan() ([]*Token, error) {
 		}
 	}
 
-	s.tokens = append(s.tokens, NewToken(EOF, "", nil, s.line))
+	s.tokens = append(s.tokens, newToken(EOF, "", nil, s.line))
 
 	return s.tokens, nil
 }
@@ -40,56 +40,56 @@ func (s *Scanner) scanToken() error {
 	char := s.next()
 	switch true {
 	case char == '(':
-		s.tokens = append(s.tokens, NewToken(LEFT_PAREN, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(LEFT_PAREN, string(s.source[s.start:s.current]), nil, s.line))
 	case char == ')':
-		s.tokens = append(s.tokens, NewToken(RIGHT_PAREN, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(RIGHT_PAREN, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '{':
-		s.tokens = append(s.tokens, NewToken(LEFT_BRACE, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(LEFT_BRACE, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '}':
-		s.tokens = append(s.tokens, NewToken(RIGHT_BRACE, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(RIGHT_BRACE, string(s.source[s.start:s.current]), nil, s.line))
 	case char == ',':
-		s.tokens = append(s.tokens, NewToken(COMMA, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(COMMA, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '.':
-		s.tokens = append(s.tokens, NewToken(DOT, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(DOT, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '-':
-		s.tokens = append(s.tokens, NewToken(MINUS, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(MINUS, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '+':
-		s.tokens = append(s.tokens, NewToken(PLUS, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(PLUS, string(s.source[s.start:s.current]), nil, s.line))
 	case char == ';':
-		s.tokens = append(s.tokens, NewToken(SEMICOLON, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(SEMICOLON, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '*':
-		s.tokens = append(s.tokens, NewToken(STAR, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(STAR, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '!':
 		var typ = BANG
 		if s.nextMatch('=') {
 			typ = BANG_EQUAL
 		}
-		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '=':
 		var typ = EQUAL
 		if s.nextMatch('=') {
 			typ = EQUAL_EQUAL
 		}
-		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '<':
 		var typ = LESS
 		if s.nextMatch('=') {
 			typ = LESS_EQUAL
 		}
-		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '>':
 		var typ = GREATER
 		if s.nextMatch('=') {
 			typ = GREATER_EQUAL
 		}
-		s.tokens = append(s.tokens, NewToken(typ, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(typ, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '/':
 		c := s.peek(0)
 		if s.nextMatch('/') || s.nextMatch('*') {
 			s.readComment(c)
 			break
 		}
-		s.tokens = append(s.tokens, NewToken(SLASH, string(s.source[s.start:s.current]), nil, s.line))
+		s.tokens = append(s.tokens, newToken(SLASH, string(s.source[s.start:s.current]), nil, s.line))
 	case char == '"':
 		s.readString()
 	case isDigit(char):
@@ -148,7 +148,7 @@ func (s *Scanner) readString() {
 	// the closing "
 	s.next()
 
-	s.tokens = append(s.tokens, NewToken(STRING, string(s.source[s.start+1:s.current-1]), nil, s.line))
+	s.tokens = append(s.tokens, newToken(STRING, string(s.source[s.start+1:s.current-1]), nil, s.line))
 }
 
 func (s *Scanner) readNumber() {
@@ -169,7 +169,7 @@ func (s *Scanner) readNumber() {
 		return
 	}
 
-	s.tokens = append(s.tokens, NewToken(NUMBER, "", number, s.line))
+	s.tokens = append(s.tokens, newToken(NUMBER, "", number, s.line))
 }
 
 func (s *Scanner) readIdentifier() {
@@ -183,7 +183,7 @@ func (s *Scanner) readIdentifier() {
 		typ = t
 	}
 
-	s.tokens = append(s.tokens, NewToken(typ, word, nil, s.line))
+	s.tokens = append(s.tokens, newToken(typ, word, nil, s.line))
 }
 
 func (s *Scanner) readComment(char rune) {

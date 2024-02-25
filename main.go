@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-
-	"github.com/unflag/go-lox/parser"
-	"github.com/unflag/go-lox/scanner"
 )
 
 func main() {
@@ -61,16 +58,16 @@ func runPrompt() error {
 
 func run(src string) error {
 	if src != "" {
-		s := scanner.NewScanner(src)
+		s := newScanner(src)
 		tokens, err := s.Scan()
 		if err != nil {
 			return fmt.Errorf("could not parse input: %w", err)
 		}
 
-		p := parser.New(tokens)
+		p := newParser(tokens)
 		expr := p.Parse()
 
-		fmt.Println(parser.NewPrinter().Print(expr))
+		fmt.Println(newPrinter().Print(expr))
 	}
 
 	return nil
