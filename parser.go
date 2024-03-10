@@ -1,8 +1,8 @@
 package main
 
 import (
+	"errors"
 	"log"
-	"text/scanner"
 )
 
 type Parser struct {
@@ -17,18 +17,147 @@ func newParser(tokens []*Token) *Parser {
 	}
 }
 
-func (p *Parser) Parse() Expr {
-	expr, err := p.expression()
-	if err != nil {
-		log.Print(err)
-		return nil
+func (p *Parser) Parse() []Stmt {
+	stmts := make([]Stmt, 0, 0)
+
+	for !p.isEOF() {
+		stmt, err := p.declaration()
+		if err != nil {
+			log.Print(err)
+			return nil
+		}
+
+		stmts = append(stmts, stmt)
 	}
 
-	return expr
+	return stmts
+}
+
+func (p *Parser) declaration() (Stmt, error) {
+	var stmt Stmt
+	var err error
+
+	switch true {
+	case p.match(VAR):
+		stmt, err = p.varDeclaration()
+	default:
+		stmt, err = p.statement()
+	}
+
+	var parseErr ParseError
+	if errors.As(err, &parseErr) {
+		ReportError(parseErr)
+		p.synchronize()
+		return nil, nil
+	}
+
+	return stmt, err
+}
+
+func (p *Parser) varDeclaration() (Stmt, error) {
+	name, err := p.consume(IDENTIFIER, "Expect variable name.")
+	if err != nil {
+		return nil, err
+	}
+
+	var initializer Expr
+	if p.match(EQUAL) {
+		initializer, err = p.expression()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if _, err = p.consume(SEMICOLON, "Expect ';' after variable declaration."); err != nil {
+		return nil, err
+	}
+
+	return &Var{
+		Initializer: initializer,
+		Name:        name,
+	}, nil
+}
+
+func (p *Parser) statement() (Stmt, error) {
+	switch true {
+	case p.match(PRINT):
+		return p.printStatement()
+	case p.match(LEFT_BRACE):
+		return p.blockStatement()
+	default:
+		return p.expressionStatement()
+	}
+}
+
+func (p *Parser) printStatement() (Stmt, error) {
+	val, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = p.consume(SEMICOLON, "Expect ';' after value."); err != nil {
+		return nil, err
+	}
+
+	return &Print{Expression: val}, nil
+}
+
+func (p *Parser) blockStatement() (Stmt, error) {
+	stmts := make([]Stmt, 0)
+	for !p.check(RIGHT_BRACE) && !p.isEOF() {
+		stmt, err := p.declaration()
+		if err != nil {
+			return nil, err
+		}
+		stmts = append(stmts, stmt)
+	}
+
+	if _, err := p.consume(RIGHT_BRACE, "Expect '}' after block."); err != nil {
+		return nil, err
+	}
+
+	return &Block{Statements: stmts}, nil
+}
+
+func (p *Parser) expressionStatement() (Stmt, error) {
+	expr, err := p.expression()
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err = p.consume(SEMICOLON, "Expect ';' after expression."); err != nil {
+		return nil, err
+	}
+
+	return &Expression{Expression: expr}, nil
 }
 
 func (p *Parser) expression() (Expr, error) {
-	return p.equality()
+	return p.assignment()
+}
+
+func (p *Parser) assignment() (Expr, error) {
+	expr, err := p.equality()
+	if err != nil {
+		return nil, err
+	}
+
+	if p.match(EQUAL) {
+		equals := p.previous()
+		value, err := p.assignment()
+		if err != nil {
+			return nil, err
+		}
+
+		varExpr, ok := expr.(*Variable)
+		if !ok {
+			return nil, NewParseError(equals, "Invalid assignment target.")
+		}
+
+		return &Assign{Name: varExpr.Name, Value: value}, nil
+	}
+
+	return expr, nil
 }
 
 func (p *Parser) equality() (Expr, error) {
@@ -82,7 +211,7 @@ func (p *Parser) advance() *Token {
 }
 
 func (p *Parser) isEOF() bool {
-	return p.peek().Type == scanner.EOF
+	return p.peek().Type == EOF
 }
 
 func (p *Parser) peek() *Token {
@@ -193,20 +322,24 @@ func (p *Parser) primary() (Expr, error) {
 		return &Literal{Value: p.previous().Literal}, nil
 	}
 
+	if p.match(IDENTIFIER) {
+		return &Variable{Name: p.previous()}, nil
+	}
+
 	if p.match(LEFT_PAREN) {
 		expr, err := p.expression()
 		if err != nil {
 			return nil, err
 		}
 
-		if _, err := p.consume(RIGHT_PAREN, "expect ')' after expression."); err != nil {
+		if _, err = p.consume(RIGHT_PAREN, "expect ')' after expression."); err != nil {
 			return nil, err
 		}
 
 		return &Grouping{Expression: expr}, nil
 	}
 
-	return nil, ParseError{Token: p.peek(), Message: "expect expression."}
+	return nil, NewParseError(p.peek(), "expect expression.")
 }
 
 func (p *Parser) consume(t TokenType, message string) (*Token, error) {
@@ -214,7 +347,7 @@ func (p *Parser) consume(t TokenType, message string) (*Token, error) {
 		return p.advance(), nil
 	}
 
-	return nil, ParseError{Token: p.peek(), Message: message}
+	return nil, NewParseError(p.peek(), message)
 }
 
 func (p *Parser) synchronize() {

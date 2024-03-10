@@ -27,27 +27,65 @@ func main() {
 	cwd = dirs[len(dirs)-1]
 	fileName := os.Getenv("GOFILE")
 
+	type (
+		TypeDesc struct {
+			Returns bool
+			Types   map[string]map[string]any
+		}
+		ASTDesc struct {
+			SourceFileName string
+			AST            map[string]TypeDesc
+		}
+	)
+
 	var buf bytes.Buffer
-	if err = astTemplate.Execute(&buf, struct {
-		SourceFileName string
-		ASTType        map[string]map[string]any
-	}{
+	if err = astTemplate.Execute(&buf, ASTDesc{
 		SourceFileName: fmt.Sprintf("%s/%s", cwd, fileName),
-		ASTType: map[string]map[string]any{
-			"Binary": map[string]any{
-				"Left":     "Expr",
-				"Operator": "*Token",
-				"Right":    "Expr",
+		AST: map[string]TypeDesc{
+			"Expr": {
+				Returns: true,
+				Types: map[string]map[string]any{
+					"Binary": map[string]any{
+						"Left":     "Expr",
+						"Operator": "*Token",
+						"Right":    "Expr",
+					},
+					"Grouping": map[string]any{
+						"Expression": "Expr",
+					},
+					"Literal": map[string]any{
+						"Value": "any",
+					},
+					"Unary": map[string]any{
+						"Operator": "*Token",
+						"Right":    "Expr",
+					},
+					"Variable": map[string]any{
+						"Name": "*Token",
+					},
+					"Assign": map[string]any{
+						"Name":  "*Token",
+						"Value": "Expr",
+					},
+				},
 			},
-			"Grouping": map[string]any{
-				"Expression": "Expr",
-			},
-			"Literal": map[string]any{
-				"Value": "any",
-			},
-			"Unary": map[string]any{
-				"Operator": "*Token",
-				"Right":    "Expr",
+			"Stmt": {
+				Returns: false,
+				Types: map[string]map[string]any{
+					"Expression": map[string]any{
+						"Expression": "Expr",
+					},
+					"Print": map[string]any{
+						"Expression": "Expr",
+					},
+					"Var": map[string]any{
+						"Name":        "*Token",
+						"Initializer": "Expr",
+					},
+					"Block": map[string]any{
+						"Statements": "[]Stmt",
+					},
+				},
 			},
 		},
 	}); err != nil {
@@ -70,32 +108,34 @@ var astTemplate = template.Must(template.New("").Parse(
 
 package main
 
-type Expr interface {}
+{{ range $class, $ast := .AST }}
+type {{ $class }} interface {}
 
-type Visitor[T any] interface {
-    {{ range $typeName, $_ := .ASTType -}}
-	Visit{{ $typeName }}(e *{{ $typeName }}) T
+type {{ $class }}Visitor[T any] interface {
+    {{ range $typeName, $_ := $ast.Types -}}
+	Visit{{ $typeName }}{{ $class }}(e *{{ $typeName }}){{ if $ast.Returns }} T{{ end }}
     {{ end -}}
 }
 
-func Accept[T any](e Expr, v Visitor[T]) T {
-    switch e := e.(type) {
-    {{ range $typeName, $_ := .ASTType -}}
+func Accept{{ $class }}Visitor[T any](a {{ $class }}, v {{ $class }}Visitor[T]){{ if $ast.Returns }} T{{ end }} {
+    switch a := a.(type) {
+    {{ range $typeName, $_ := $ast.Types -}}
     case *{{ $typeName }}:
-	    return v.Visit{{ $typeName }}(e)
+	    {{ if $ast.Returns }}return {{ end }} v.Visit{{ $typeName }}{{ $class }}(a)
     {{ end -}}
     default:
     }
-
-    return any(nil).(T)
+    {{ if $ast.Returns }}return any(nil).(T){{ end -}}
 }
 
-{{ range $typeName, $typeDefinition := .ASTType -}}
+{{ range $typeName, $typeDefinition := $ast.Types -}}
 type {{ $typeName }} struct {
   {{- range $field, $type := $typeDefinition }}
   {{ $field }} {{ $type }}
   {{- end }}
 }
+
+{{ end -}}
 
 {{ end -}}
 `))

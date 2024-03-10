@@ -19,7 +19,7 @@ func newScanner(source string) *Scanner {
 	}
 }
 
-func (s *Scanner) Scan() ([]*Token, error) {
+func (s *Scanner) Scan() []*Token {
 	for !s.isEOF() {
 		s.start = s.current
 		if err := s.scanToken(); err != nil {
@@ -29,7 +29,7 @@ func (s *Scanner) Scan() ([]*Token, error) {
 
 	s.tokens = append(s.tokens, newToken(EOF, "", nil, s.line))
 
-	return s.tokens, nil
+	return s.tokens
 }
 
 func (s *Scanner) isEOF() bool {

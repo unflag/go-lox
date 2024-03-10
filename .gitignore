@@ -8,6 +8,7 @@
 *.so
 *.dylib
 lox
+go-lox
 
 # Test binary, built with `go test -c`
 *.test
