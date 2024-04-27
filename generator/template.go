@@ -67,6 +67,11 @@ func main() {
 						"Name":  "*Token",
 						"Value": "Expr",
 					},
+					"Logical": map[string]any{
+						"Left":     "Expr",
+						"Operator": "*Token",
+						"Right":    "Expr",
+					},
 				},
 			},
 			"Stmt": {
@@ -84,6 +89,15 @@ func main() {
 					},
 					"Block": map[string]any{
 						"Statements": "[]Stmt",
+					},
+					"If": map[string]any{
+						"Expression": "Expr",
+						"ThenBranch": "Stmt",
+						"ElseBranch": "Stmt",
+					},
+					"While": map[string]any{
+						"Condition": "Expr",
+						"Body":      "Stmt",
 					},
 				},
 			},

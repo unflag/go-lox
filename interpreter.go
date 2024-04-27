@@ -21,8 +21,9 @@ func (i *Interpreter[T]) Interpret(statements []Stmt) {
 			var runtimeErr RuntimeError
 			if errors.As(r.(error), &runtimeErr) {
 				ReportRuntimeError(runtimeErr)
+			} else {
+				panic(r)
 			}
-			expressionValue = nil
 		}
 	}()
 
@@ -48,9 +49,23 @@ func (i *Interpreter[T]) VisitExpressionStmt(s *Expression) {
 	expressionValue = i.evaluate(s.Expression)
 }
 
+func (i *Interpreter[T]) VisitIfStmt(s *If) {
+	if toBool(i.evaluate(s.Expression)) {
+		i.execute(s.ThenBranch)
+	} else {
+		i.execute(s.ElseBranch)
+	}
+}
+
 func (i *Interpreter[T]) VisitPrintStmt(s *Print) {
 	value := i.evaluate(s.Expression)
 	fmt.Printf("%v\n", value)
+}
+
+func (i *Interpreter[T]) VisitWhileStmt(s *While) {
+	for toBool(i.evaluate(s.Condition)) {
+		i.execute(s.Body)
+	}
 }
 
 func (i *Interpreter[T]) VisitVarStmt(s *Var) {
@@ -72,6 +87,22 @@ func (i *Interpreter[T]) VisitBlockStmt(s *Block) {
 	for _, stmt := range s.Statements {
 		i.execute(stmt)
 	}
+}
+
+func (i *Interpreter[T]) VisitLogicalExpr(e *Logical) T {
+	left := any(i.evaluate(e.Left))
+
+	if e.Operator.Type == OR {
+		if toBool(left) {
+			return left.(T)
+		}
+	} else {
+		if !toBool(left) {
+			return left.(T)
+		}
+	}
+
+	return any(i.evaluate(e.Right)).(T)
 }
 
 func (i *Interpreter[T]) VisitBinaryExpr(e *Binary) T {
@@ -159,6 +190,10 @@ func (i *Interpreter[T]) VisitGroupingExpr(e *Grouping) T {
 }
 
 func (i *Interpreter[T]) VisitLiteralExpr(e *Literal) T {
+	if e.Value == nil {
+		var v interface{} = "nil"
+		return v.(T)
+	}
 	return e.Value.(T)
 }
 
@@ -196,6 +231,10 @@ func (i *Interpreter[T]) VisitAssignExpr(e *Assign) T {
 
 func toBool(obj any) bool {
 	if obj == nil {
+		return false
+	}
+
+	if _, ok := obj.(NilT); ok {
 		return false
 	}
 

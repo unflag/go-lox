@@ -30,6 +30,15 @@ func Test_Printer(t *testing.T) {
 			},
 			want: "(* (- 123) (group 45.67))",
 		},
+		{
+			name: "logical",
+			input: &Logical{
+				Left:     &Literal{Value: NilT{}},
+				Operator: newToken(OR, "OR", nil, 1),
+				Right:    &Literal{Value: true},
+			},
+			want: "(OR nil true)",
+		},
 	}
 
 	for _, tc := range testCases {

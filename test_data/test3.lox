@@ -1,0 +1,6 @@
+print "no" or "yes"; // "no"
+print nil or "yes"; // "yes"
+print "false" or "true"; // "false"
+print false or "true"; // "true"
+print true or "false"; // "true"
+print nil or false; // "false"

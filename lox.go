@@ -79,5 +79,6 @@ func ReportError(err ParseError) {
 
 func ReportRuntimeError(err RuntimeError) {
 	hadRuntimeError = true
+	expressionValue = nil
 	fmt.Printf("%s\n", err)
 }
