@@ -5,13 +5,26 @@ import (
 	"fmt"
 )
 
+type loxCallable[T any] interface {
+	call(i *Interpreter[T], args []any) T
+	arity() int
+}
+
+type ReturnValue struct {
+	Value Expr
+}
+
 type Interpreter[T any] struct {
-	env *Environment
+	globals *Environment
+	env     *Environment
 }
 
 func NewInterpreter() *Interpreter[any] {
+	globals := NewEnvironment(nil)
+	globals.Define(&Token{Lexeme: "clock"}, &clock[any]{})
 	return &Interpreter[any]{
-		env: NewEnvironment(nil),
+		globals: globals,
+		env:     globals,
 	}
 }
 
@@ -49,6 +62,11 @@ func (i *Interpreter[T]) VisitExpressionStmt(s *Expression) {
 	expressionValue = i.evaluate(s.Expression)
 }
 
+func (i *Interpreter[T]) VisitFunctionStmt(s *Function) {
+	fn := newLoxFunction(s, i.env)
+	i.env.Define(s.Name, fn)
+}
+
 func (i *Interpreter[T]) VisitIfStmt(s *If) {
 	if toBool(i.evaluate(s.Expression)) {
 		i.execute(s.ThenBranch)
@@ -60,6 +78,14 @@ func (i *Interpreter[T]) VisitIfStmt(s *If) {
 func (i *Interpreter[T]) VisitPrintStmt(s *Print) {
 	value := i.evaluate(s.Expression)
 	fmt.Printf("%v\n", value)
+}
+
+func (i *Interpreter[T]) VisitReturnStmt(s *Return) {
+	var value Expr = &NilT{}
+	if _, ok := s.Value.(*NilT); !ok {
+		value = i.evaluate(s.Value)
+	}
+	panic(&ReturnValue{Value: value})
 }
 
 func (i *Interpreter[T]) VisitWhileStmt(s *While) {
@@ -78,13 +104,17 @@ func (i *Interpreter[T]) VisitVarStmt(s *Var) {
 }
 
 func (i *Interpreter[T]) VisitBlockStmt(s *Block) {
+	i.executeBlock(s.Statements, i.env)
+}
+
+func (i *Interpreter[T]) executeBlock(stmts []Stmt, env *Environment) {
 	previousEnv := i.env
 	defer func() {
 		i.env = previousEnv
 	}()
 
-	i.env = NewEnvironment(i.env)
-	for _, stmt := range s.Statements {
+	i.env = env
+	for _, stmt := range stmts {
 		i.execute(stmt)
 	}
 }
@@ -124,7 +154,7 @@ func (i *Interpreter[T]) VisitBinaryExpr(e *Binary) T {
 	}
 
 	if !lok || !rok {
-		panic(NewRuntimeError(e.Operator, fmt.Sprintf("unsupported operands: %v %v", left, right)))
+		panic(NewRuntimeError(e.Operator, fmt.Sprintf("Unsupported operands: %v %v", left, right)))
 	}
 
 	return v.(T)
@@ -148,7 +178,7 @@ func (i *Interpreter[T]) visitBinaryStringExpr(op *Token, l, r string) T {
 	case EQUAL_EQUAL:
 		v = l == r
 	default:
-		panic(NewRuntimeError(op, fmt.Sprintf("unsupported operands: %v %v", l, r)))
+		panic(NewRuntimeError(op, fmt.Sprintf("Unsupported operands: %v %v", l, r)))
 	}
 	return v.(T)
 }
@@ -160,7 +190,7 @@ func (i *Interpreter[T]) visitBinaryFloat64Expr(op *Token, l, r float64) T {
 		v = l - r
 	case SLASH:
 		if r == 0 {
-			panic(NewRuntimeError(op, "division by zero"))
+			panic(NewRuntimeError(op, "Division by zero"))
 		}
 		v = l / r
 	case STAR:
@@ -180,9 +210,29 @@ func (i *Interpreter[T]) visitBinaryFloat64Expr(op *Token, l, r float64) T {
 	case EQUAL_EQUAL:
 		v = l == r
 	default:
-		panic(NewRuntimeError(op, fmt.Sprintf("unsupported operands: %v %v", l, r)))
+		panic(NewRuntimeError(op, fmt.Sprintf("Unsupported operands: %v %v", l, r)))
 	}
 	return v.(T)
+}
+
+func (i *Interpreter[T]) VisitCallExpr(e *Call) T {
+	callee := i.evaluate(e.Callee)
+
+	args := make([]interface{}, 0, len(e.Args))
+	for _, arg := range e.Args {
+		args = append(args, i.evaluate(arg))
+	}
+
+	f, ok := any(callee).(loxCallable[T])
+	if !ok {
+		panic(NewRuntimeError(e.Paren, "Can only call functions and classes."))
+	}
+
+	if f.arity() != len(args) {
+		panic(NewRuntimeError(e.Paren, fmt.Sprintf("Expected %d arguments but got %d.", f.arity(), len(args))))
+	}
+
+	return f.call(i, args)
 }
 
 func (i *Interpreter[T]) VisitGroupingExpr(e *Grouping) T {
@@ -203,7 +253,7 @@ func (i *Interpreter[T]) VisitUnaryExpr(e *Unary) T {
 	switch e.Operator.Type {
 	case MINUS:
 		if _, ok := any(right).(float64); !ok {
-			panic(NewRuntimeError(e.Operator, fmt.Sprintf("cannot negate %T", right)))
+			panic(NewRuntimeError(e.Operator, fmt.Sprintf("Cannot negate %T", right)))
 		}
 		v = -(any(right).(float64))
 	case BANG:

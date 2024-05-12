@@ -43,6 +43,10 @@ func (p *Printer[T]) VisitLogicalExpr(e *Logical) T {
 	return p.parenthesize(e.Operator.Lexeme, e.Left, e.Right)
 }
 
+func (p *Printer[T]) VisitCallExpr(e *Call) T {
+	return T(fmt.Sprintf("(funcion call with args [%v])", e.Paren.String()))
+}
+
 func (p *Printer[T]) parenthesize(name string, exprs ...Expr) T {
 	expression := make([]string, 0, len(exprs))
 	for _, e := range exprs {

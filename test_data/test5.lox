@@ -1,0 +1,15 @@
+fun greet(n, s) {
+  print "Hello, " + n + " " + s + "!";
+}
+
+var n = "Dear";
+var s = "User";
+greet(n, s);
+
+fun square(i) {
+  print i * i;
+}
+
+for (var i = 0; i <= 10; i = i + 1) {
+  square(i);
+}

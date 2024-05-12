@@ -50,6 +50,11 @@ func main() {
 						"Operator": "*Token",
 						"Right":    "Expr",
 					},
+					"Call": map[string]any{
+						"Callee": "Expr",
+						"Paren":  "*Token",
+						"Args":   "[]Expr",
+					},
 					"Grouping": map[string]any{
 						"Expression": "Expr",
 					},
@@ -80,8 +85,17 @@ func main() {
 					"Expression": map[string]any{
 						"Expression": "Expr",
 					},
+					"Function": map[string]any{
+						"Name":   "*Token",
+						"Params": "[]*Token",
+						"Body":   "[]Stmt",
+					},
 					"Print": map[string]any{
 						"Expression": "Expr",
+					},
+					"Return": map[string]any{
+						"Keyword": "*Token",
+						"Value":   "Expr",
 					},
 					"Var": map[string]any{
 						"Name":        "*Token",
@@ -127,7 +141,7 @@ type {{ $class }} interface {}
 
 type {{ $class }}Visitor[T any] interface {
     {{ range $typeName, $_ := $ast.Types -}}
-	Visit{{ $typeName }}{{ $class }}(e *{{ $typeName }}){{ if $ast.Returns }} T{{ end }}
+	Visit{{ $typeName }}{{ $class }}(x *{{ $typeName }}){{ if $ast.Returns }} T{{ end }}
     {{ end -}}
 }
 
